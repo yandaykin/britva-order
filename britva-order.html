@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>BRITVA — Заказы</title>
+<meta name="theme-color" content="#1a1a1a">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f5f4f0;
+  --card:#fff;
+  --text:#1a1a1a;
+  --text2:#888;
+  --border:#e2e0db;
+  --accent:#1a1a1a;
+  --accent-text:#fff;
+  --yes-bg:#e6f4ec;
+  --yes-border:#2d8a4e;
+  --yes-color:#2d8a4e;
+  --ozon:#005bff;
+  --shop:#2d8a4e;
+  --sup:#b85c00;
+}
+@media(prefers-color-scheme:dark){
+  :root{
+    --bg:#111;
+    --card:#1e1e1e;
+    --text:#f0efe9;
+    --text2:#777;
+    --border:#2a2a2a;
+    --yes-bg:#0a2018;
+    --yes-border:#2d8a4e;
+  }
+}
+html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text)}
+body{display:flex;flex-direction:column;min-height:100svh}
+
+.header{background:var(--accent);color:#fff;padding:16px 16px 0;position:sticky;top:0;z-index:100}
+.header-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.logo{font-size:20px;font-weight:700;letter-spacing:2px}
+.share-btn{background:rgba(255,255,255,0.15);border:none;color:#fff;padding:8px 14px;border-radius:8px;font-size:13px;cursor:pointer}
+.share-btn:active{opacity:0.7}
+
+.tabs{display:flex;gap:2px}
+.tab{flex:1;padding:10px 4px;background:transparent;border:none;color:rgba(255,255,255,0.5);font-size:13px;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;transition:color 0.15s,border-color 0.15s;text-align:center}
+.tab.active{color:#fff;border-bottom-color:#fff}
+
+.content{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px}
+
+.section{display:none}
+.section.active{display:block}
+
+.progress-bar{height:3px;background:var(--border);border-radius:2px;margin-bottom:12px;overflow:hidden}
+.progress-fill{height:100%;border-radius:2px;transition:width 0.3s}
+.ozon-fill{background:var(--ozon)}
+.shop-fill{background:var(--shop)}
+.sup-fill{background:var(--sup)}
+
+/* Item */
+.item{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px 16px;margin-bottom:8px;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background 0.12s,border-color 0.12s;active:opacity:0.85}
+.item:active{opacity:0.75}
+.item.yes{background:var(--yes-bg);border-color:var(--yes-border)}
+.item-row{display:flex;align-items:center;gap:12px}
+.toggle{width:52px;height:28px;border-radius:14px;background:var(--border);position:relative;flex-shrink:0;transition:background 0.2s}
+.item.yes .toggle{background:var(--yes-color)}
+.toggle-knob{position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:transform 0.2s;box-shadow:0 1px 3px rgba(0,0,0,0.2)}
+.item.yes .toggle-knob{transform:translateX(24px)}
+.item-body{flex:1;min-width:0}
+.item-name{font-size:15px;font-weight:500;line-height:1.3}
+.item.yes .item-name{color:var(--yes-color)}
+.item-meta{font-size:12px;color:var(--text2);margin-top:3px;display:flex;gap:8px;flex-wrap:wrap}
+.badge{padding:2px 8px;border-radius:20px;font-size:11px;font-weight:500}
+.ozon-badge{background:#e8f0ff;color:var(--ozon)}
+.shop-badge{background:#e6f4ec;color:var(--shop)}
+.sup-badge{background:#fef3e6;color:var(--sup)}
+@media(prefers-color-scheme:dark){
+  .ozon-badge{background:#0a1a40}
+  .shop-badge{background:#0a2018}
+  .sup-badge{background:#301800}
+}
+
+.reset-row{text-align:center;padding:16px 0 8px}
+.reset-btn{background:none;border:none;color:var(--text2);font-size:13px;cursor:pointer;text-decoration:underline}
+
+.footer{background:var(--card);border-top:1px solid var(--border);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.footer-count{font-size:13px;color:var(--text2)}
+.footer-count strong{color:var(--text);font-weight:600}
+.copy-btn{background:var(--accent);color:#fff;border:none;padding:10px 20px;border-radius:10px;font-size:14px;font-weight:500;cursor:pointer}
+.copy-btn:active{opacity:0.8}
+
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);background:#1a1a1a;color:#fff;padding:10px 20px;border-radius:20px;font-size:14px;opacity:0;transition:all 0.25s;pointer-events:none;z-index:999;white-space:nowrap}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-top">
+    <div class="logo">✂ BRITVA</div>
+    <button class="share-btn" onclick="copyAll()">Поделиться</button>
+  </div>
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('ozon',this)">OZON</button>
+    <button class="tab" onclick="switchTab('shop',this)">Магазин</button>
+    <button class="tab" onclick="switchTab('sup',this)">Поставщики</button>
+  </div>
+</div>
+
+<div class="content">
+  <div id="tab-ozon" class="section active">
+    <div class="progress-bar"><div class="progress-fill ozon-fill" id="prog-ozon" style="width:0%"></div></div>
+    <div id="list-ozon"></div>
+    <div class="reset-row"><button class="reset-btn" onclick="resetTab('ozon')">Сбросить раздел</button></div>
+  </div>
+  <div id="tab-shop" class="section">
+    <div class="progress-bar"><div class="progress-fill shop-fill" id="prog-shop" style="width:0%"></div></div>
+    <div id="list-shop"></div>
+    <div class="reset-row"><button class="reset-btn" onclick="resetTab('shop')">Сбросить раздел</button></div>
+  </div>
+  <div id="tab-sup" class="section">
+    <div class="progress-bar"><div class="progress-fill sup-fill" id="prog-sup" style="width:0%"></div></div>
+    <div id="list-sup"></div>
+    <div class="reset-row"><button class="reset-btn" onclick="resetTab('sup')">Сбросить раздел</button></div>
+  </div>
+</div>
+
+<div class="footer">
+  <div class="footer-count" id="footer-text">Нужно: <strong>0</strong></div>
+  <button class="copy-btn" onclick="copyAll()">Скопировать список</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const DATA = {
+  ozon:[
+    {name:'Палочки ушные',hint:'Мин: 4 упак'},
+    {name:'Ватные диски',hint:'Мин: 5 упак'},
+    {name:'Шпатели',hint:'Мин: 2 упак'},
+    {name:'Шапочки',hint:'Мин: 1'},
+    {name:'Сиропы (разные)',hint:'Мин: 1'},
+    {name:'Чековая лента',hint:'Мин: 1 упак'},
+    {name:'Пакеты фасовочные',hint:'Мин: 1'},
+    {name:'Средство для мытья полов',hint:'Мин: 1'},
+    {name:'Порошок стиральный',hint:'Мин: 1'},
+    {name:'Кондиционер для белья',hint:'Мин: 2'},
+    {name:'Средство для мытья посуды',hint:'Мин: 1'},
+    {name:'Средство для мытья туалетов',hint:'Мин: 1'},
+    {name:'Полироль',hint:'Мин: 2'},
+    {name:'Стаканчики (для кофе с собой)',hint:'Мин: 3'},
+    {name:'Арома масла',hint:'Мин: 3'},
+    {name:'Освежитель воздуха (автоматический)',hint:'Мин: 2'},
+    {name:'Освежитель воздуха (ручной)',hint:'Мин: 2'},
+    {name:'Туалетная бумага',hint:'Мин: 1 упак'},
+    {name:'Жидкое мыло',hint:'Мин: 1'},
+    {name:'Спирт',hint:'Мин: 1'},
+    {name:'Бутылочки под спирт',hint:'Мин: 2'},
+    {name:'Cif (средство для мытья раковины)',hint:'Мин: 1'},
+    {name:'Молоко',hint:'Мин: 5'},
+    {name:'Чай чёрный',hint:'Мин: 1'},
+    {name:'Чай зелёный',hint:'Мин: 1'},
+    {name:'Сахар',hint:'Мин: 2'},
+    {name:'Кофе',hint:'Мин: 2'},
+    {name:'Корица',hint:'Мин: 1'},
+    {name:'Тряпки-салфетки',hint:'Мин: 1'},
+    {name:'Перчатки уборщице',hint:'Мин: 1'},
+    {name:'Лимонная кислота',hint:'Мин: 1'},
+    {name:'Пакеты мусорные',hint:'Мин: 3 рул'},
+    {name:'Губки для мытья посуды',hint:'Мин: 3 шт'},
+    {name:'Перчатки для барберов (L-M)',hint:'Мин: 2'},
+    {name:'Воск',hint:'Мин: 1 упак'},
+    {name:'Таблетки для чистки кофемашины',hint:'Мин: 2'},
+    {name:'Лезвия',hint:'Мин: 2 пачки'},
+  ],
+  shop:[
+    {name:'Печенье аморети',hint:'Метро'},
+    {name:'Кола (очаково)',hint:'Очаково'},
+    {name:'Шоколадки',hint:'Метро'},
+    {name:'Какао',hint:'Через бабушку'},
+    {name:'Полотенца одноразовые в рулонах',hint:'Поставщик'},
+    {name:'Пиво',hint:'КБ'},
+    {name:'Лимон',hint:'Рынок'},
+  ],
+  sup:[
+    {name:'Воротники',hint:''},
+    {name:'Вода для кулера',hint:'+7 495 783 82 81'},
+    {name:'Виски',hint:'КБ'},
+  ]
+};
+
+const LABELS = {ozon:'OZON',shop:'Магазин',sup:'Поставщики'};
+const EMOJIS = {ozon:'🛒',shop:'🏪',sup:'🏭'};
+const KEY = 'britva_v3';
+let state = {};
+
+function load(){try{state=JSON.parse(localStorage.getItem(KEY))||{};}catch{state={};}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch{}}
+function k(tab,i){return tab+'_'+i;}
+
+function render(tab){
+  const el = document.getElementById('list-'+tab);
+  el.innerHTML = DATA[tab].map((item,i)=>{
+    const on = !!(state[k(tab,i)]);
+    return `<div class="item${on?' yes':''}" onclick="toggle('${tab}',${i})" id="it-${tab}-${i}">
+      <div class="item-row">
+        <div class="toggle"><div class="toggle-knob"></div></div>
+        <div class="item-body">
+          <div class="item-name">${item.name}</div>
+          ${item.hint?`<div class="item-meta">${item.hint}</div>`:''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  updateProgress(tab);
+  updateFooter();
+}
+
+function toggle(tab,i){
+  state[k(tab,i)] = !state[k(tab,i)];
+  save();
+  const el = document.getElementById('it-'+tab+'-'+i);
+  el.classList.toggle('yes', state[k(tab,i)]);
+  updateProgress(tab);
+  updateFooter();
+}
+
+function updateProgress(tab){
+  const total = DATA[tab].length;
+  const on = DATA[tab].filter((_,i)=>state[k(tab,i)]).length;
+  document.getElementById('prog-'+tab).style.width = (total?Math.round(on/total*100):0)+'%';
+}
+
+function updateFooter(){
+  let n=0;
+  ['ozon','shop','sup'].forEach(tab=>DATA[tab].forEach((_,i)=>{if(state[k(tab,i)])n++;}));
+  document.getElementById('footer-text').innerHTML='Нужно: <strong>'+n+'</strong>';
+}
+
+function switchTab(tab,btn){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+  btn.classList.add('active');
+}
+
+function resetTab(tab){
+  if(!confirm('Сбросить раздел «'+LABELS[tab]+'»?'))return;
+  DATA[tab].forEach((_,i)=>{state[k(tab,i)]=false;});
+  save();
+  render(tab);
+}
+
+function copyAll(){
+  const lines=['📋 Заказы BRITVA\n'];
+  let any=false;
+  ['ozon','shop','sup'].forEach(tab=>{
+    const items=DATA[tab].filter((_,i)=>state[k(tab,i)]);
+    if(!items.length)return;
+    any=true;
+    lines.push(EMOJIS[tab]+' '+LABELS[tab]+':');
+    items.forEach(item=>{
+      lines.push('  • '+item.name+(item.hint?' ('+item.hint+')':''));
+    });
+    lines.push('');
+  });
+  if(!any){showToast('Ничего не отмечено');return;}
+  const text=lines.join('\n');
+  if(navigator.share){navigator.share({title:'Заказы BRITVA',text}).catch(()=>copy(text));}
+  else copy(text);
+}
+
+function copy(text){
+  if(navigator.clipboard){navigator.clipboard.writeText(text).then(()=>showToast('Скопировано ✓'));}
+  else{const t=document.createElement('textarea');t.value=text;t.style.cssText='position:fixed;opacity:0';document.body.appendChild(t);t.select();document.execCommand('copy');document.body.removeChild(t);showToast('Скопировано ✓');}
+}
+
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2200);
+}
+
+load();
+['ozon','shop','sup'].forEach(render);
+</script>
+</body>
+</html>
